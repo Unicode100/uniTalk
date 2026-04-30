@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>uniTalk</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #F5F4F1; --surface: #FFFFFF;
+  --border: rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.14);
+  --text: #18181A; --text2: #6B6A72; --text3: #AEACB8;
+  --accent: #4A42B5; --accent-l: #ECEAFF; --accent-d: #302B8A;
+  --green: #1A7A5E; --green-l: #DFF2EB;
+  --red: #B53A3A; --red-l: #FDEAEA;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --r: 12px;
+}
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; gap: 12px;
+  height: 52px; padding: 0 20px;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.logo { font-size: 17px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+.logo em { font-style: normal; color: var(--accent); }
+.nav-tabs { display: flex; gap: 2px; flex: 1; }
+.nav-tab {
+  padding: 6px 14px; border-radius: 8px;
+  font-size: 13px; font-weight: 500; color: var(--text2);
+  cursor: pointer; border: none; background: none;
+  font-family: var(--font); transition: all .15s;
+}
+.nav-tab:hover { background: var(--accent-l); color: var(--accent); }
+.nav-tab.active { background: var(--accent-l); color: var(--accent); }
+.topbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.user-chip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 12px 4px 5px;
+  border-radius: 20px; cursor: pointer;
+  border: 1px solid var(--border2); background: var(--surface);
+}
+.ava {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent-l); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600;
+}
+.chip-name { font-size: 13px; font-weight: 500; }
+.logout-btn {
+  padding: 6px 12px; border-radius: 8px; font-size: 13px;
+  color: var(--text3); cursor: pointer; border: none;
+  background: none; font-family: var(--font);
+}
+.logout-btn:hover { background: var(--red-l); color: var(--red); }
+
+.layout { display: flex; min-height: calc(100vh - 52px); }
+.sidebar {
+  width: 220px; flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  padding: 12px 10px;
+}
+.sidebar-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 8px;
+  font-size: 13px; font-weight: 500; color: var(--text2);
+  cursor: pointer; transition: all .15s; margin-bottom: 2px;
+}
+.sidebar-item:hover { background: var(--accent-l); color: var(--accent); }
+.sidebar-item.active { background: var(--accent-l); color: var(--accent); }
+
+.main { flex: 1; padding: 24px; max-width: 740px; }
+
+.page { display: none; }
+.page.active { display: block; }
+
+.page-hdr { margin-bottom: 18px; }
+.page-hdr h2 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+.page-hdr p { font-size: 13px; color: var(--text3); }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 18px 20px;
+  margin-bottom: 12px;
+}
+.card-title { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text3); margin-bottom: 14px; }
+
+/* PROFILE */
+.profile-hero {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 22px; margin-bottom: 14px;
+  display: flex; align-items: flex-start; gap: 18px;
+}
+.profile-ava {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: var(--accent-l); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 600; flex-shrink: 0;
+}
+.profile-name { font-size: 20px; font-weight: 600; margin-bottom: 3px; }
+.profile-handle { font-size: 12px; color: var(--text3); margin-bottom: 8px; font-family: monospace; }
+.pill {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 500;
+  background: var(--accent-l); color: var(--accent);
+}
+.stats-grid {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  gap: 10px; margin-bottom: 14px;
+}
+.stat-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 14px; text-align: center;
+}
+.stat-n { font-size: 22px; font-weight: 600; color: var(--accent); font-family: monospace; }
+.stat-l { font-size: 11px; color: var(--text3); margin-top: 3px; }
+
+/* FEED */
+.feed-item {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 18px 20px; margin-bottom: 10px;
+  cursor: pointer; transition: border-color .15s;
+}
+.feed-item:hover { border-color: var(--border2); }
+.fi-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.fi-ava {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--accent-l); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600; flex-shrink: 0;
+}
+.fi-author { font-size: 13px; font-weight: 600; }
+.fi-time { font-size: 11px; color: var(--text3); }
+.fi-title { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+.fi-body { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 12px; }
+.fi-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 12px; }
+.fi-tag { font-size: 11px; padding: 2px 8px; border-radius: 6px; background: var(--bg); color: var(--text3); border: 1px solid var(--border); font-family: monospace; }
+.fi-footer { display: flex; align-items: center; gap: 6px; }
+.fi-btn {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px; color: var(--text3); cursor: pointer;
+  padding: 5px 10px; border-radius: 8px; border: none; background: none;
+  font-family: var(--font); transition: all .15s;
+}
+.fi-btn:hover { background: var(--accent-l); color: var(--accent); }
+.fi-solved { margin-left: auto; font-size: 11px; font-weight: 600; color: var(--green); background: var(--green-l); padding: 3px 9px; border-radius: 6px; }
+
+/* ASK */
+.ask-input {
+  width: 100%; border: 1px solid var(--border2);
+  border-radius: 8px; padding: 10px 12px;
+  font-size: 14px; color: var(--text);
+  background: var(--bg); font-family: var(--font);
+  outline: none; margin-bottom: 10px; transition: border-color .15s;
+}
+.ask-input:focus { border-color: var(--accent); background: white; }
+.ask-input::placeholder { color: var(--text3); }
+textarea.ask-input { resize: none; line-height: 1.6; }
+.btn {
+  padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: none; font-family: var(--font); transition: all .15s;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: var(--accent-d); }
+.btn-full { width: 100%; }
+
+/* MENTORS */
+.mentor-card {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 16px 18px; margin-bottom: 10px;
+  cursor: pointer; transition: all .15s;
+}
+.mentor-card:hover { border-color: var(--accent); }
+.mentor-card.picked { border-color: var(--accent); background: var(--accent-l); }
+.mentor-ava {
+  width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 600; flex-shrink: 0;
+}
+.mentor-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+.mentor-sub { font-size: 12px; color: var(--text3); }
+.mentor-price { margin-left: auto; font-size: 14px; font-weight: 600; color: var(--accent); font-family: monospace; }
+
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: var(--text); color: white; padding: 12px 20px;
+  border-radius: 10px; font-size: 13px; font-weight: 500;
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1); z-index: 999;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">uni<em>Talk</em></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('feed',this)">Лента</button>
+    <button class="nav-tab" onclick="showPage('mentors',this)">Менторы</button>
+    <button class="nav-tab" onclick="showPage('profile',this)">Профиль</button>
+    <button class="nav-tab" onclick="showPage('ask',this)">Задать вопрос</button>
+  </div>
+  <div class="topbar-right">
+    <div class="user-chip" onclick="showPage('profile',null)">
+      <div class="ava" id="top-ava">?</div>
+      <span class="chip-name" id="top-name">...</span>
+    </div>
+    <button class="logout-btn" onclick="logout()">Выйти</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sidebar-item active" onclick="showPage('feed',null)" data-page="feed">📋 Лента вопросов</div>
+    <div class="sidebar-item" onclick="showPage('ask',null)" data-page="ask">❓ Задать вопрос</div>
+    <div class="sidebar-item" onclick="showPage('mentors',null)" data-page="mentors">🎓 Менторы</div>
+    <div class="sidebar-item" onclick="showPage('apply',null)" data-page="apply">📝 Подать заявку</div>
+    <div class="sidebar-item" onclick="showPage('profile',null)" data-page="profile">👤 Мой профиль</div>
+  </div>
+
+  <div class="main">
+
+    <div class="page active" id="page-feed">
+      <div class="page-hdr">
+        <h2>Лента вопросов</h2>
+        <p>Помоги сообществу — ответь на вопрос и получи очки</p>
+      </div>
+      <div id="feed-list">
+        <div style="text-align:center;padding:40px;color:var(--text3);">Загружаем вопросы...</div>
+      </div>
+    </div>
+
+    <div class="page" id="page-ask">
+      <div class="page-hdr">
+        <h2>Задать вопрос</h2>
+        <p>Сообщество ответит и ты получишь помощь</p>
+      </div>
+      <div class="card">
+        <input class="ask-input" id="q-title" placeholder="Заголовок вопроса...">
+        <textarea class="ask-input" id="q-body" rows="5" placeholder="Опиши проблему подробно..."></textarea>
+        <input class="ask-input" id="q-tags" placeholder="Теги через запятую: python, react, sql">
+        <button class="btn btn-primary btn-full" onclick="postQuestion()">Опубликовать вопрос</button>
+      </div>
+    </div>
+
+    <div class="page" id="page-mentors">
+      <div class="page-hdr">
+        <h2>Менторы</h2>
+        <p>Выбери ментора и подай заявку</p>
+      </div>
+      <div id="mentor-list">
+        <div class="mentor-card">
+          <div class="mentor-ava" style="background:#ECEAFF;color:#4A42B5">НБ</div>
+          <div>
+            <div class="mentor-name">Николай Борисов</div>
+            <div class="mentor-sub">Python · Backend · обучил +300 учеников</div>
+          </div>
+          <div class="mentor-price">1 000/ч</div>
+        </div>
+        <div class="mentor-card">
+          <div class="mentor-ava" style="background:#DFF2EB;color:#1A7A5E">ПД</div>
+          <div>
+            <div class="mentor-name">Павел Дуров</div>
+            <div class="mentor-sub">Full-stack · 8 лет опыта</div>
+          </div>
+          <div class="mentor-price">10 000/ч</div>
+        </div>
+      </div>
+      <div style="margin-top:14px;">
+        <button class="btn btn-primary btn-full" onclick="showPage('apply',null)">Подать заявку →</button>
+      </div>
+    </div>
+
+    <div class="page" id="page-apply">
+      <div class="page-hdr">
+        <h2>Заявка на менторство</h2>
+        <p>Ментор ответит в течение 24 часов</p>
+      </div>
+      <div class="card">
+        <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px;">Цель менторства</div>
+        <textarea class="ask-input" id="apply-goal" rows="4" placeholder="Чего хочешь достичь..."></textarea>
+        <button class="btn btn-primary btn-full" onclick="showToast('✓ Заявка отправлена!')">Отправить заявку</button>
+      </div>
+    </div>
+
+    <div class="page" id="page-profile">
+      <div class="profile-hero">
+        <div class="profile-ava" id="profile-ava">?</div>
+        <div>
+          <div class="profile-name" id="profile-name">...</div>
+          <div class="profile-handle" id="profile-handle">...</div>
+          <div class="pill">★ Новичок</div>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-n">0</div><div class="stat-l">Очки</div></div>
+        <div class="stat-box"><div class="stat-n">1</div><div class="stat-l">Уровень</div></div>
+        <div class="stat-box"><div class="stat-n">0</div><div class="stat-l">Рейтинг</div></div>
+        <div class="stat-box"><div class="stat-n">0</div><div class="stat-l">Ответов</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Значки</div>
+        <div style="color:var(--text3);font-size:13px;">Значки появятся когда начнёшь помогать сообществу 🏅</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Проверяем авторизацию
+const token = localStorage.getItem('token')
+const user = JSON.parse(localStorage.getItem('user') || '{}')
+
+if (!token) {
+  window.location.href = '/auth.html'
+}
+
+// Заполняем данные пользователя
+const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : '?'
+document.getElementById('top-ava').textContent = initials
+document.getElementById('top-name').textContent = user.name || 'Пользователь'
+document.getElementById('profile-ava').textContent = initials
+document.getElementById('profile-name').textContent = user.name || '...'
+document.getElementById('profile-handle').textContent = '@' + (user.handle || user.email)
+
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'))
+  document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'))
+  document.getElementById('page-' + name).classList.add('active')
+  if (btn) btn.classList.add('active')
+  const si = document.querySelector(`[data-page="${name}"]`)
+  if (si) si.classList.add('active')
+}
+
+function logout() {
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  window.location.href = '/auth.html'
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast')
+  t.textContent = msg
+  t.classList.add('show')
+  setTimeout(() => t.classList.remove('show'), 3000)
+}
+
+async function postQuestion() {
+  const title = document.getElementById('q-title').value
+  const body = document.getElementById('q-body').value
+  const tagsRaw = document.getElementById('q-tags').value
+  if (!title || !body) return showToast('Заполни заголовок и описание')
+  const tags = tagsRaw.split(',').map(t => t.trim()).filter(Boolean)
+  showToast('✓ Вопрос опубликован!')
+  document.getElementById('q-title').value = ''
+  document.getElementById('q-body').value = ''
+  document.getElementById('q-tags').value = ''
+  showPage('feed', null)
+  loadFeed()
+}
+
+async function loadFeed() {
+  document.getElementById('feed-list').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);">Загружаем вопросы...</div>'
+  const questions = [
+    { id:1, author:'Мария В.', initials:'МВ', time:'14 мин', solved:true,
+      title:'Как правильно реализовать пагинацию в PostgreSQL?',
+      body:'Есть таблица на 50 млн записей. Классический OFFSET медленный...',
+      tags:['sql','postgresql'], votes:14, answers:7 },
+    { id:2, author:'Иван С.', initials:'ИС', time:'1 ч', solved:false,
+      title:'React: почему useEffect вызывается дважды в StrictMode?',
+      body:'В dev-режиме React 18 каждый эффект срабатывает два раза...',
+      tags:['react','hooks'], votes:9, answers:4 },
+  ]
+  const fl = document.getElementById('feed-list')
+  fl.innerHTML = ''
+  questions.forEach(q => {
+    fl.innerHTML += `<div class="feed-item">
+      <div class="fi-header">
+        <div class="fi-ava">${q.initials}</div>
+        <div><div class="fi-author">${q.author}</div><div class="fi-time">${q.time} назад</div></div>
+        ${q.solved ? '<div class="fi-solved" style="margin-left:auto">Решено</div>' : ''}
+      </div>
+      <div class="fi-title">${q.title}</div>
+      <div class="fi-body">${q.body}</div>
+      <div class="fi-tags">${q.tags.map(t => `<span class="fi-tag">${t}</span>`).join('')}</div>
+      <div class="fi-footer">
+        <button class="fi-btn" onclick="showToast('+ Голос!')">▲ ${q.votes}</button>
+        <button class="fi-btn">💬 ${q.answers} ответов</button>
+        <button class="fi-btn" style="margin-left:auto" onclick="showToast('Открываем вопрос...')">Ответить →</button>
+      </div>
+    </div>`
+  })
+}
+
+loadFeed()
+</script>
+</body>
+</html>
