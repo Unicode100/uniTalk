@@ -73,7 +73,6 @@ input:focus { border-color: var(--accent); background: white; }
   <div id="error-msg" class="error"></div>
   <div id="success-msg" class="success"></div>
 
-  <!-- Форма входа -->
   <div id="form-login" class="form">
     <div class="form-group">
       <label>Email</label>
@@ -86,7 +85,6 @@ input:focus { border-color: var(--accent); background: white; }
     <button class="btn" onclick="login()">Войти</button>
   </div>
 
-  <!-- Форма регистрации -->
   <div id="form-register" class="form" style="display:none">
     <div class="form-group">
       <label>Имя</label>
@@ -105,6 +103,8 @@ input:focus { border-color: var(--accent); background: white; }
 </div>
 
 <script>
+const BASE = window.location.origin
+
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
   event.target.classList.add('active')
@@ -135,7 +135,7 @@ async function login() {
   const password = document.getElementById('login-password').value
 
   try {
-    const res = await fetch('/api/auth/login', {
+    const res = await fetch(BASE + '/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
@@ -144,12 +144,11 @@ async function login() {
 
     if (!res.ok) return showError(data.error)
 
-    // Сохраняем токен и данные пользователя
     localStorage.setItem('token', data.token)
     localStorage.setItem('user', JSON.stringify(data.user))
 
     showSuccess('Входим...')
-    setTimeout(() => window.location.href = '/index.html', 1000)
+    setTimeout(() => window.location.href = BASE + '/index.html', 1000)
   } catch (e) {
     showError('Ошибка соединения с сервером')
   }
@@ -163,7 +162,7 @@ async function register() {
   if (password.length < 6) return showError('Пароль минимум 6 символов')
 
   try {
-    const res = await fetch('/api/auth/register', {
+    const res = await fetch(BASE + '/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password })
@@ -176,7 +175,7 @@ async function register() {
     localStorage.setItem('user', JSON.stringify(data.user))
 
     showSuccess('Аккаунт создан! Входим...')
-    setTimeout(() => window.location.href = '/index.html', 1000)
+    setTimeout(() => window.location.href = BASE + '/index.html', 1000)
   } catch (e) {
     showError('Ошибка соединения с сервером')
   }
