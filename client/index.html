@@ -361,49 +361,146 @@ async function postQuestion() {
   const body = document.getElementById('q-body').value
   const tagsRaw = document.getElementById('q-tags').value
   if (!title || !body) return showToast('Заполни заголовок и описание')
+  
   const tags = tagsRaw.split(',').map(t => t.trim()).filter(Boolean)
-  showToast('✓ Вопрос опубликован!')
-  document.getElementById('q-title').value = ''
-  document.getElementById('q-body').value = ''
-  document.getElementById('q-tags').value = ''
-  showPage('feed', null)
-  loadFeed()
+  
+  try {
+    const res = await fetch(window.location.origin + '/api/questions', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token 
+      },
+      body: JSON.stringify({ title, body, tags })
+    })
+    
+    if (!res.ok) return showToast('Ошибка публикации')
+    
+    showToast('✓ Вопрос опубликован!')
+    document.getElementById('q-title').value = ''
+    document.getElementById('q-body').value = ''
+    document.getElementById('q-tags').value = ''
+    showPage('feed', null)
+    loadFeed()
+  } catch(e) {
+    showToast('Ошибка соединения')
+  }
 }
 
 async function loadFeed() {
-  document.getElementById('feed-list').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);">Загружаем вопросы...</div>'
-  const questions = [
-    { id:1, author:'Мария В.', initials:'МВ', time:'14 мин', solved:true,
-      title:'Как правильно реализовать пагинацию в PostgreSQL?',
-      body:'Есть таблица на 50 млн записей. Классический OFFSET медленный...',
-      tags:['sql','postgresql'], votes:14, answers:7 },
-    { id:2, author:'Иван С.', initials:'ИС', time:'1 ч', solved:false,
-      title:'React: почему useEffect вызывается дважды в StrictMode?',
-      body:'В dev-режиме React 18 каждый эффект срабатывает два раза...',
-      tags:['react','hooks'], votes:9, answers:4 },
-  ]
-  const fl = document.getElementById('feed-list')
-  fl.innerHTML = ''
-  questions.forEach(q => {
-    fl.innerHTML += `<div class="feed-item">
-      <div class="fi-header">
-        <div class="fi-ava">${q.initials}</div>
-        <div><div class="fi-author">${q.author}</div><div class="fi-time">${q.time} назад</div></div>
-        ${q.solved ? '<div class="fi-solved" style="margin-left:auto">Решено</div>' : ''}
-      </div>
-      <div class="fi-title">${q.title}</div>
-      <div class="fi-body">${q.body}</div>
-      <div class="fi-tags">${q.tags.map(t => `<span class="fi-tag">${t}</span>`).join('')}</div>
-      <div class="fi-footer">
-        <button class="fi-btn" onclick="showToast('+ Голос!')">▲ ${q.votes}</button>
-        <button class="fi-btn">💬 ${q.answers} ответов</button>
-        <button class="fi-btn" style="margin-left:auto" onclick="showToast('Открываем вопрос...')">Ответить →</button>
-      </div>
-    </div>`
-  })
+  document.getElementById('feed-list').innerHTML = 
+    '<div style="text-align:center;padding:40px;color:var(--text3);">Загружаем вопросы...</div>'
+  
+  try {
+    const res = await fetch(window.location.origin + '/api/questions', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    })
+    const questions = await res.json()
+
+    const fl = document.getElementById('feed-list')
+    
+    if (questions.length === 0) {
+      fl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);">Вопросов пока нет — задай первый!</div>'
+      return
+    }
+
+    fl.innerHTML = ''
+    questions.forEach(q => {
+      const initials = q.author_name.split(' ').map(n => n[0]).join('').toUpperCase()
+      const tags = (q.tags || []).map(t => `<span class="fi-tag">${t}</span>`).join('')
+      const time = timeAgo(q.created_at)
+      fl.innerHTML += `<div class="feed-item">
+        <div class="fi-header">
+          <div class="fi-ava">${initials}</div>
+          <div><div class="fi-author">${q.author_name}</div><div class="fi-time">${time}</div></div>
+        </div>
+        <div class="fi-title">${q.title}</div>
+        <div class="fi-body">${q.body}</div>
+        <div class="fi-tags">${tags}</div>
+        <div class="fi-footer">
+          <button class="fi-btn">▲ 0</button>
+          <button class="fi-btn" onclick="openQuestion(${q.id}, \`${q.title}\`, \`${q.body}\`)">💬 ${q.answer_count || 0} ответов</button>
+          <button class="fi-btn" style="margin-left:auto" onclick="openQuestion(${q.id}, \`${q.title}\`, \`${q.body}\`)">Ответить →</button>
+        </div>
+      </div>`
+    })
+  } catch (e) {
+    document.getElementById('feed-list').innerHTML = 
+      '<div style="text-align:center;padding:40px;color:var(--text3);">Ошибка загрузки</div>'
+  }
 }
 
+function timeAgo(dateStr) {
+  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000)
+  if (diff < 60) return 'только что'
+  if (diff < 3600) return Math.floor(diff/60) + ' мин назад'
+  if (diff < 86400) return Math.floor(diff/3600) + ' ч назад'
+  return Math.floor(diff/86400) + ' дн назад'
+}
+let currentQuestionId = null
+
+function openQuestion(id, title, body) {
+  currentQuestionId = id
+  document.getElementById('modal-title').textContent = title
+  document.getElementById('modal-body').textContent = body
+  document.getElementById('modal-answers').innerHTML = '<div style="color:var(--text3);font-size:13px;">Загружаем ответы...</div>'
+  document.getElementById('modal-overlay').style.display = 'flex'
+  loadAnswers(id)
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').style.display = 'none'
+  currentQuestionId = null
+}
+
+async function loadAnswers(questionId) {
+  const res = await fetch(window.location.origin + '/api/answers/' + questionId)
+  const answers = await res.json()
+  const el = document.getElementById('modal-answers')
+  if (answers.length === 0) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:13px;">Ответов пока нет — будь первым!</div>'
+    return
+  }
+  el.innerHTML = answers.map(a => `
+    <div style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;">
+      <div style="font-size:12px;font-weight:600;margin-bottom:6px;">${a.author_name} · ${timeAgo(a.created_at)}</div>
+      <div style="font-size:14px;color:var(--text2);line-height:1.6;">${a.body}</div>
+    </div>
+  `).join('')
+}
+
+async function postAnswer() {
+  const body = document.getElementById('answer-input').value
+  if (!body) return showToast('Напиши ответ')
+  const res = await fetch(window.location.origin + '/api/answers/' + currentQuestionId, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + token
+    },
+    body: JSON.stringify({ body })
+  })
+  if (!res.ok) return showToast('Ошибка публикации')
+  document.getElementById('answer-input').value = ''
+  showToast('✓ Ответ опубликован!')
+  loadAnswers(currentQuestionId)
+}
 loadFeed()
 </script>
+<!-- Модальное окно вопроса -->
+<div id="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border-radius:16px;padding:28px;width:90%;max-width:620px;max-height:80vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 id="modal-title" style="font-size:17px;font-weight:600;"></h3>
+      <button onclick="closeModal()" style="border:none;background:none;font-size:20px;cursor:pointer;color:var(--text3);">✕</button>
+    </div>
+    <div id="modal-body" style="font-size:14px;color:var(--text2);margin-bottom:20px;line-height:1.6;"></div>
+    <div id="modal-answers" style="margin-bottom:20px;"></div>
+    <div style="border-top:1px solid var(--border);padding-top:16px;">
+      <textarea id="answer-input" class="ask-input" rows="3" placeholder="Напиши ответ..."></textarea>
+      <button class="btn btn-primary btn-full" onclick="postAnswer()">Опубликовать ответ</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

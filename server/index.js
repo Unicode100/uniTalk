@@ -21,9 +21,9 @@ app.use((req, res, next) => {
 })
 
 app.use(express.static(path.join(__dirname, '../client')))
-
-// Подключаем маршруты
 app.use('/api/auth', require('./routes/auth'))
+app.use('/api/questions', require('./routes/questions'))
+app.use('/api/answers', require('./routes/answers'))
 
 app.get('/api/hello', (req, res) => {
   res.json({ message: 'uniTalk работает! 🚀' })
